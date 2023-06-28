@@ -15,7 +15,7 @@ def compute_speaker_mean_std(args):
 
     spk_list = list(set(ali['spk_id']))
     spk_means = dict()
-    spk_var = dict()
+    spk_std = dict()
     for i, spk in enumerate(tqdm(spk_list)):
         x_features, x_phones = aggregate_feat_phone(spk, ali, args.feature_dir, frame_rate=args.frame_rate)
         spk_means[spk] = np.mean(x_features, axis=0)
