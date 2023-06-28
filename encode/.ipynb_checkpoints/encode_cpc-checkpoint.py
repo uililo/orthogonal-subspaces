@@ -25,7 +25,7 @@ def encode_dataset(args):
         wav = wav.unsqueeze(0).cuda()
         x = cpc.encode(wav).squeeze().cpu().numpy()
         # x = StandardScaler(with_std=False).fit_transform(x)
-        #codes = kmeans.predict(x)
+        # codes = kmeans.predict(x)
 
         relative_path = in_path.relative_to(in_dir)
         out_path = out_dir / relative_path.with_suffix("")
@@ -36,7 +36,7 @@ def encode_dataset(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Encode an audio dataset using CPC-big (with speaker normalization and discretization)."
+        description="Encode an audio dataset using CPC-big (without speaker normalization and discretization)."
     )
     parser.add_argument("in_dir", type=Path, help="Path to the directory to encode.")
     parser.add_argument("out_dir", type=Path, help="Path to the output directory.")

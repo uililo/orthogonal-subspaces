@@ -17,11 +17,7 @@ def encode_dataset(args):
 
     print("Loading checkpoints")
     bundle = torchaudio.pipelines.WAV2VEC2_BASE
-
-    # Build the model and load pretrained weight.
     model = bundle.get_model().cuda()
-
-    #kmeans = torch.hub.load("bshall/cpc:main", "kmeans50")
 
     print(f"Encoding dataset at {in_dir}")
     for in_path in tqdm(sorted(list(in_dir.rglob("*.flac")))):
@@ -31,7 +27,6 @@ def encode_dataset(args):
         wav = wav.cuda()
         features, _ = model.extract_features(wav)
         x = features[6].squeeze().detach().cpu().numpy()
-        #codes = kmeans.predict(x)
 
         relative_path = in_path.relative_to(in_dir)
         out_path = out_dir / relative_path.with_suffix("")
@@ -42,7 +37,7 @@ def encode_dataset(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Encode an audio dataset using CPC-big (with speaker normalization and discretization)."
+        description="Encode an audio dataset using wav2vec2."
     )
     parser.add_argument("in_dir", type=Path, help="Path to the directory to encode.")
     parser.add_argument("out_dir", type=Path, help="Path to the output directory.")

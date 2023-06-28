@@ -13,10 +13,6 @@ def encode_dataset(args):
     in_dir, out_dir = Path(args.in_dir), Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # print("Loading checkpoints")
-    # cpc = torch.hub.load("bshall/cpc:main", "cpc").cuda()
-    #kmeans = torch.hub.load("bshall/cpc:main", "kmeans50")
-
     print(f"Encoding dataset at {in_dir}")
     for in_path in tqdm(sorted(list(in_dir.rglob("*.flac")))):
         wav, sr = torchaudio.load(in_path)
@@ -36,7 +32,7 @@ def encode_dataset(args):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Encode an audio dataset using CPC-big (with speaker normalization and discretization)."
+        description="Extract log mel feature for an audio dataset."
     )
     parser.add_argument("in_dir", type=Path, help="Path to the directory to encode.")
     parser.add_argument("out_dir", type=Path, help="Path to the output directory.")

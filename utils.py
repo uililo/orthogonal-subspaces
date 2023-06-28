@@ -16,21 +16,28 @@ from collections import Counter, defaultdict
 import re
 import os
 
-vowels = ['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH','IY','OW', 'OY', 'UH', 'UW']
-consonants = ['M', 'N', 'NG', 'R', 'L', 'Y', 'W', 'P', 'B', 'T', 'D', 'K', 'G', 'JH',  'HH' 'F', 'V', 'S', 'Z', 'DH', 'SH', 'CH', 'ZH', 'TH']
 ph_list = ['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH','IY','OW', 'OY', 'UH', 'UW', 'M', 'N', 'NG', 'R', 'L', 'Y', 'W', 'P', 'B', 'T', 'D', 'K', 'G', 'JH',  'HH', 'F', 'V', 'S', 'Z', 'DH', 'SH', 'CH', 'ZH', 'TH', 'SIL', 'SPN']
 two_letter = ['AA', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH','IY','OW', 'OY', 'UH', 'UW', 'NG', 'SH', 'DH', 'SIL', 'EH', 'SPN', 'AY', 'AW', 'AE', 'CH' 'ZH' 'JH', 'TH', 'HH']
 only_ph = ['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH','IY','OW', 'OY', 'UH', 'UW', 'M', 'N', 'NG', 'R', 'L', 'Y', 'W', 'P', 'B', 'T', 'D', 'K', 'G', 'JH',  'HH', 'F', 'V', 'S', 'Z', 'DH', 'SH', 'CH', 'ZH', 'TH']
-ph_dic = {k: v for k, v in enumerate(ph_list)}
+consonants = [ 'M', 'N', 'NG', 'R', 'L', 'Y', 'W', 'P', 'B', 'T', 'D', 'K', 'G', 'JH',  'HH', 'F', 'V', 'S', 'Z', 'DH', 'SH', 'CH', 'ZH', 'TH']
+vowels = ['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH','IY','OW', 'OY', 'UH', 'UW']
+clean_spk = ['1272', '174', '2078', '2086', '2428', '251', '2803', '2902', '3000', '3170', '3752', '422', '5536', '5694', '6241', '6295', '652', '777', '8297', '7976', '1462', '1673', '1919', '1988', '1993', '2035', '2277', '2412', '3081', '3536', '3576', '3853', '5338', '5895', '6313', '6319', '6345', '7850', '84', '8842']
+other_spk = ['116', '1255', '1585', '1630', '1650', '1651', '1686', '1701', '2506', '3660', '3663', '3915', '4153', '4323', '4515', '4570', '4572', '4831', '5543', '5849', '6123', '6267', '6455', '6467', '6599', '6841', '700', '7601', '7641', '7697', '8173', '8254', '8288']
 
-clean_spk = ['1272', '3170', '2412', '1993', '2803', '3853', '251', '6345', '2078', '2035', '6319', '2428', '84', '3536', '422', '1673', '5536', '6313', '5338', '2277', '777', '8297', '8842', '5895', '6295', '7850', '2902', '6241', '3576', '1988', '3000', '2086', '5694', '1919', '3752', '3081', '1462', '652', '174', '7976']
+monophthongs = ['AA', 'AE', 'AH', 'AO', 'EH', 'ER','IH','IY', 'UH', 'UW']
+diphthongs = ['AW', 'AY', 'EY', 'OW', 'OY']
+approximants = ['R', 'L', 'Y', 'W']
+fricatives = ['HH', 'F', 'V', 'S', 'Z', 'DH', 'SH', 'ZH', 'TH']
+affricates = ['JH', 'CH']
+nasals = [ 'M', 'N', 'NG' ]
+plosives = ['P', 'B', 'T', 'D', 'K', 'G']
 
 def remove_bie(label):
     return re.sub('[0-9]','',label.split('_')[0])
 
 def create_phone_labels(spk_ch_utt, feat_len, ali, frame_rate=100):
     selected_ali = ali[ali.utt_id == spk_ch_utt]
-    phone_dur = selected_ali.phone_dur.values*frame_rate
+    phone_dur = selected_ali.phone_dur.values * frame_rate
     phone = selected_ali.phone.values
     phone = list(map(remove_bie, phone))
 
@@ -42,7 +49,6 @@ def create_phone_labels(spk_ch_utt, feat_len, ali, frame_rate=100):
         phone_labels.extend(['SIL']*pad_len)
     elif feat_len < len(phone_labels):
         print('discrepant lengths - feature length: %d, label length: %d'%(feat_len, len(phone_labels)))
-
     return phone_labels
 
 def aggregate_feat_phone(spk, ali, direc, frame_rate=100):
