@@ -20,25 +20,25 @@
 # ====================
 
 # Location for stdout log - see https://slurm.schedmd.com/sbatch.html#lbAH
-#SBATCH --output=/home/%u/aligning-cpc/probing_slurm_logs/slurm-%A_%a.out
+#SBATCH --output=/home/%u/aligning-cpc/zerospeech2021/slurm_out/slurm-$1.out
 
 # Location for stderr log - see https://slurm.schedmd.com/sbatch.html#lbAH
-#SBATCH --error=/home/%u/aligning-cpc/probing_slurm_logs/slurm-%A_%a.out
+#SBATCH --error=/home/%u/aligning-cpc/zerospeech2021/slurm_out/slurm-$1.out
 
 # Maximum number of nodes to use for the job
-# # SBATCH --nodes=1
+# #SBATCH --nodes=2
 
 # Generic resources to use - typically you'll want gpu:n to get n gpus
-# # SBATCH --gres=gpu:1
+# #SBATCH --gres=gpu:0
 
 # Megabytes of RAM required. Check `cluster-status` for node configurations
 #SBATCH --mem=14000
 
 # Number of CPUs to use. Check `cluster-status` for node configurations
-#SBATCH --cpus-per-task=4
+#SBATCH --cpus-per-task=5
 
 # Maximum time for the job to run, format: days-hours:minutes:seconds
-#SBATCH --time=05:00:00
+#SBATCH --time=4-01:00:00
 
 
 # =====================
@@ -81,7 +81,7 @@ SCRATCH_HOME=${SCRATCH_DISK}/${USER}
 mkdir -p ${SCRATCH_HOME}
 
 # Activate your conda environment
-CONDA_ENV_NAME=cpc
+CONDA_ENV_NAME=zerospeech2021
 echo "Activating conda environment: ${CONDA_ENV_NAME}"
 conda activate ${CONDA_ENV_NAME}
 
@@ -107,22 +107,11 @@ conda activate ${CONDA_ENV_NAME}
 
 # input data directory path on the DFS - change line below if loc different
 repo_home=/home/${USER}
-src_path=${repo_home}/aligning-cpc
+src_path=${repo_home}/orthogonal-subspaces
 
 # input data directory path on the scratch disk of the node
-dest_path=${SCRATCH_HOME}/aligning-cpc
-# mkdir -p ${dest_path}/LibriSpeech
-
-# if [ -L "${dest_path}/LibriSpeech" ]; then
-#   # Take action if $DIR exists. #
-#   # ls -l ${dest_path}/LibriSpeech
-#   unlink ${dest_path}/LibriSpeech
-# fi
-# ls -l ${dest_path}/LibriSpeech
-
-mkdir -p ${dest_path}/$1
-ls -l ${dest_path}/
-
+dest_path=${SCRATCH_HOME}/orthogonal-subspaces
+mkdir -p ${dest_path}/$1  # make it if required
 
 # Important notes about rsync:
 # * the --compress option is going to compress the data before transfer to send
@@ -133,15 +122,19 @@ ls -l ${dest_path}/
 #       ${SCRATCH_HOME}/project_name/data/input/input
 # * for more about the (endless) rsync options, see the docs:
 #       https://download.samba.org/pub/rsync/rsync.html
+
+# if [ -L "${dest_path}/LibriSpeech" ]; then
+#   # Take action if $DIR exists. #
+#   # ls -l ${dest_path}/LibriSpeech
+#   unlink ${dest_path}/LibriSpeech
+# fi
+
 rsync --archive --update --compress --progress --exclude='*/' ${src_path}/ ${dest_path}/
-# rsync --archive --update --compress --progress ${src_path}/probe_acc.py ${dest_path}/probe_acc.py
-rsync --archive --update --compress --progress ${src_path}/sterile_split/ ${dest_path}/sterile_split/
-rsync --archive --update --compress --progress --exclude='*/' ${src_path}/LibriSpeech/forced_alignment/ ${dest_path}/LibriSpeech/forced_alignment/
-ls -l ${dest_path}/
 rsync --archive --update --compress --progress ${src_path}/$1/ ${dest_path}/$1/
+rsync --archive --update --compress --progress ${src_path}/probing_split/ ${dest_path}/probing_split/
+rsync --archive --update --compress --progress --exclude='*/' ${src_path}/LibriSpeech/ ${dest_path}/LibriSpeech/
+rsync --archive --update --compress --progress --exclude='slurm_out/' ${repo_home}/orthogonal-subspaces/zerospeech2021/ ${SCRATCH_HOME}/orthogonal-subspaces/zerospeech2021
 
-
-# rsync --archive --update --compress --progress ${src_path}/utils.py ${dest_path}/utils.py
 
 # ==============================
 # Finally, run the experiment!
@@ -152,7 +145,10 @@ rsync --archive --update --compress --progress ${src_path}/$1/ ${dest_path}/$1/
 # inclusive.
 
 cd ${dest_path}
-COMMAND="python -u probe_acc.py $1 $2 $3"
+cd zerospeech2021
+# COMMAND="python -u eval_ABX.py ../$1 ../sterile_split/dev-clean-$2.item --file_extension .npy"
+COMMAND="python -u eval_ABX.py ../$1 ABX_data/$2.item --file_extension .npy --feature_size 0.01"
+
 echo "Running provided command: ${COMMAND}"
 eval "${COMMAND}"
 echo "Command ran successfully!"
@@ -166,8 +162,8 @@ echo "Command ran successfully!"
 
 echo "Moving output data back to DFS"
 
-src_path=${SCRATCH_HOME}/aligning-cpc/$1
-dest_path=${repo_home}/aligning-cpc/$1
+src_path=${SCRATCH_HOME}/orthogonal-subspaces/$1
+dest_path=${repo_home}/orthogonal-subspaces/$1
 rsync --archive --update --compress --progress ${src_path}/ ${dest_path}
 
 

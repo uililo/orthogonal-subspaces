@@ -6,3 +6,5 @@ probing_split
 zerospeech2021
 zerospeech2021_baseline
 logs
+features_new
+probing_split_old

@@ -73,53 +73,7 @@ def compute_phone_centroid(x_feat, x_phone):
     for ph in ph_list:
         if ph in phone_occurred:
             x_phone_centroid[ph] = np.mean(np.array(x_phone_emb[ph]), axis=0)
-        # print(x_phone_centroid[0].shape)
     return x_phone_centroid
-
-def plot_cos_sim(cos_sim, ph_list):
-    fig, ax = plt.subplots(figsize=(15, 15), dpi=80)
-    im = ax.imshow(cos_sim, vmin=-0.3, vmax=1)
-
-    # Show all ticks and label them with the respective list entries
-    ax.set_xticks(np.arange(len(ph_list)))
-    ax.set_yticks(np.arange(len(ph_list))) 
-    ax.set_xticklabels(ph_list)
-    ax.set_yticklabels(ph_list)
-    plt.setp(ax.get_xticklabels(), ha="right",
-             rotation_mode="anchor")
-    im.set_cmap("Blues_r")
-    plt.colorbar(im)
-    plt.show()
-    
-def procrustes_mapping(source, target):
-    R = scipy.linalg.orthogonal_procrustes(source, target)[0]
-    return np.dot(source, R), R
-
-def cos_sim(x_feat, y_feat):
-    return 1 - sp.distance.cdist(x_feat, y_feat, 'cosine')
-
-def compare_cos_sim(cs_a, cs_b, ph_list):
-    a = [cs_a[i, i] for i in range(len(cs_a))]
-    b = [cs_b[i, i] for i in range(len(cs_a))]
-    for i, ph in enumerate(ph_list):
-        print(ph, a[i], b[i])
-        
-def present_cos_sim(src1, tgt1, src2, tgt2, ph_list):
-    mapped1, _ = procrustes_mapping(src1, tgt1)
-    cs_1 = cos_sim(mapped1, tgt1)
-    cs_2 = cos_sim(src2, tgt2)
-    
-    compare_cos_sim(cs_1, cs_2, ph_list)
-    
-def cos_sim_summary(cs_1, cs_2, ph_list):
-    for i, ph in enumerate(ph_list):
-        print(ph, ph_list[np.argmax(cs_1[i])],np.max(cs_1[i]), ph_list[np.argsort(cs_1[i])[-2]], sorted(cs_1[i])[-2], ph_list[np.argmax(cs_2[i])],np.max(cs_2[i]))
-
-def avg_diagonal_sim(x_feat, y_feat):
-    cs = cos_sim(x_feat, y_feat)
-    diag_sim = [cs[i,i] for i in range(len(x_feat)-1)]
-    # print(len(diag_sim))
-    return np.mean(diag_sim)
 
 def umap_emb(x_feat, y_feat):
     combined = np.concatenate([x_feat, y_feat])
@@ -142,43 +96,3 @@ def plot_phone_vec(x_feat, x_vector, y_feat, y_vector):
         else:
             plt.scatter(x_vector_emb[i,1], x_vector_emb[i,0], alpha=0.5, s=200, color='r', marker='$%s$'%ph)
             plt.scatter(y_vector_emb[i,1], y_vector_emb[i,0], alpha=0.5, s=200, color='g', marker='$%s$'%ph)
-
-def umap_emb(x_feat, y_feat):
-    combined = np.concatenate([x_feat, y_feat])
-    mapper = umap.UMAP().fit(combined)
-    emb = umap.plot._get_embedding(mapper)
-    x_len = len(x_feat)
-    x_emb = emb[:x_len]
-    y_emb = emb[x_len:]
-    return x_emb, y_emb, mapper
-
-def pca_map(x_feat, y_feat, x_centroid, y_centroid, n_comp):
-    pca_x = PCA(n_components=n_comp)
-    pca_x.fit(x_feat)
-    x_pc = pca_x.components_
-
-    pca_y = PCA(n_components=n_comp)
-    pca_y.fit(y_feat)
-    y_pc = pca_y.components_
-    x_n = pca_x.transform(x_centroid_n)
-    y_n = pca_y.transform(y_centroid_n)
-    _, R = procrustes_mapping(x_n, y_n)
-    x_centroid_mapped = np.dot(x_n, R)
-    cos_sim_mapped = 1 - sp.distance.cdist(x_centroid_mapped, y_n, 'cosine')
-    # cos_sim = 1 - sp.distance.cdist(x_n, y_n, 'cosine')
-    # present_cos_sim(x_centroid_mapped, y_n, x_n, y_n)
-    # plot_cos_sim(cos_sim(x_n,y_n))
-    # plot_cos_sim(cos_sim_mapped)
-    diag_sim = np.mean([cos_sim_mapped[i,i] for i in range(len(ph_list)-1)])
-    # print(diag_sim)
-    return pca_x, pca_y, R
-
-def shared_phones(a_phone, t_phone):
-    shared = []
-    for ph in ph_list:
-        if ph in a_phone and ph in t_phone:
-            shared.append(ph)
-    return shared
-
-def normalise_ph_vecs(x):
-    return x / np.linalg.norm(x,axis=1)[:,None]

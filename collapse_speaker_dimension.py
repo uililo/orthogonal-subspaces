@@ -19,8 +19,7 @@ def collapse_dimensions(feat, pca, idx):
     return feat - np.dot(np.dot(feat, pca.components_[:idx].transpose()), pca.components_[:idx])
 
 def collapse_dimensions_for_dataset(args):
-    in_dir, out_dir = Path(args.in_dir), Path(args.out_dir)
-    pca_dir = in_dir / args.pca_name
+    in_dir, pca_dir, out_dir = Path(args.in_dir), Path(args.pca_dir), Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     spk_pca = load(pca_dir)
     dim_idx, sum_var = explained_var_hyperpar(spk_pca, args.threshold)
@@ -46,7 +45,7 @@ if __name__ == "__main__":
         description="Encode an audio dataset using CPC-big (with speaker normalization and discretization)."
     )
     parser.add_argument("in_dir", type=Path, help="Path to the directory to encode.")
-    parser.add_argument("pca_name", type=str, help="Filename of speaker PCA")
+    parser.add_argument("pca_dir", type=Path, help="Filename of speaker PCA")
     parser.add_argument("out_dir", type=Path, help="Path to the output directory.")
     parser.add_argument("threshold", type=float, help="threshold for cumulative value of explained variance")
     args = parser.parse_args()

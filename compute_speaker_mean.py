@@ -21,7 +21,7 @@ def compute_speaker_mean_std(args):
         spk_means[spk] = np.mean(x_features, axis=0)
         spk_std[spk] = np.std(x_features, axis=0)
     dump(spk_means, args.feature_dir+'/spk_means')
-    dump(spk_var, args.feature_dir+'/spk_std')
+    dump(spk_std, args.feature_dir+'/spk_std')
     
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(

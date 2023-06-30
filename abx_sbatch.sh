@@ -20,10 +20,10 @@
 # ====================
 
 # Location for stdout log - see https://slurm.schedmd.com/sbatch.html#lbAH
-#SBATCH --output=/home/%u/aligning-cpc/zerospeech2021/slurm_out/slurm-%A_%a.out
+#SBATCH --output=/home/%u/aligning-cpc/zerospeech2021/slurm_out/slurm-$1.out
 
 # Location for stderr log - see https://slurm.schedmd.com/sbatch.html#lbAH
-#SBATCH --error=/home/%u/aligning-cpc/zerospeech2021/slurm_out/slurm-%A_%a.out
+#SBATCH --error=/home/%u/aligning-cpc/zerospeech2021/slurm_out/slurm-$1.out
 
 # Maximum number of nodes to use for the job
 # #SBATCH --nodes=2
@@ -107,10 +107,10 @@ conda activate ${CONDA_ENV_NAME}
 
 # input data directory path on the DFS - change line below if loc different
 repo_home=/home/${USER}
-src_path=${repo_home}/aligning-cpc
+src_path=${repo_home}/orthogonal-subspaces
 
 # input data directory path on the scratch disk of the node
-dest_path=${SCRATCH_HOME}/aligning-cpc
+dest_path=${SCRATCH_HOME}/orthogonal-subspaces
 mkdir -p ${dest_path}/$1  # make it if required
 
 # Important notes about rsync:
@@ -123,17 +123,16 @@ mkdir -p ${dest_path}/$1  # make it if required
 # * for more about the (endless) rsync options, see the docs:
 #       https://download.samba.org/pub/rsync/rsync.html
 
-if [ -L "${dest_path}/LibriSpeech" ]; then
-  # Take action if $DIR exists. #
-  # ls -l ${dest_path}/LibriSpeech
-  unlink ${dest_path}/LibriSpeech
-fi
+# if [ -L "${dest_path}/LibriSpeech" ]; then
+#   # Take action if $DIR exists. #
+#   # ls -l ${dest_path}/LibriSpeech
+#   unlink ${dest_path}/LibriSpeech
+# fi
 
 rsync --archive --update --compress --progress --exclude='*/' ${src_path}/ ${dest_path}/
 rsync --archive --update --compress --progress ${src_path}/$1/ ${dest_path}/$1/
-rsync --archive --update --compress --progress ${src_path}/sterile_split/ ${dest_path}/sterile_split/
-rsync --archive --update --compress --progress --exclude='*/' ${src_path}/LibriSpeech/ ${dest_path}/LibriSpeech/
-rsync --archive --update --compress --progress --exclude='slurm_logs/' ${repo_home}/aligning-cpc/zerospeech2021/ ${SCRATCH_HOME}/aligning-cpc/zerospeech2021
+# rsync --archive --update --compress --progress ${src_path}/probing_split/ ${dest_path}/probing_split/
+rsync --archive --update --compress --progress --exclude='slurm_out/' ${repo_home}/orthogonal-subspaces/zerospeech2021/ ${SCRATCH_HOME}/orthogonal-subspaces/zerospeech2021
 
 
 # ==============================
@@ -147,12 +146,11 @@ rsync --archive --update --compress --progress --exclude='slurm_logs/' ${repo_ho
 cd ${dest_path}
 cd zerospeech2021
 # COMMAND="python -u eval_ABX.py ../$1 ../sterile_split/dev-clean-$2.item --file_extension .npy"
-COMMAND="python -u eval_ABX.py ../$1 ABX_data/dev-clean.item --file_extension .npy --feature_size 0.01"
+COMMAND="python -u eval_ABX.py ../$1 ABX_data/$2.item --file_extension .npy --feature_size 0.01"
 
 echo "Running provided command: ${COMMAND}"
 eval "${COMMAND}"
 echo "Command ran successfully!"
-# mv ../$1/abx.log ../$1/abx_orig.log
 
 
 # ======================================
@@ -163,8 +161,8 @@ echo "Command ran successfully!"
 
 echo "Moving output data back to DFS"
 
-src_path=${SCRATCH_HOME}/aligning-cpc/$1
-dest_path=${repo_home}/aligning-cpc/$1
+src_path=${SCRATCH_HOME}/orthogonal-subspaces/$1
+dest_path=${repo_home}/orthogonal-subspaces/$1
 rsync --archive --update --compress --progress ${src_path}/ ${dest_path}
 
 

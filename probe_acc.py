@@ -21,7 +21,6 @@ import copy
 feat_direc = sys.argv[1]
 feat_dim = int(sys.argv[2])
 frame_rate = int(sys.argv[3]) 
-# subset = sys.argv[3]
 fout = open(feat_direc+'/probing_sterile.log', 'w')
 cuda = False
 
@@ -30,59 +29,10 @@ ali = pd.read_csv('LibriSpeech/forced_alignment/dev-clean.ali', delimiter=' ')
 ali['spk_id'] = list(map(lambda x: re.match('([0-9]+)-*',x).group(1), ali.utt_id.values))
 ali['utt_only'] = list(map(lambda x: re.search('-([0-9]+)-*',x).group(1), ali.utt_id.values))
 
-only_ph = ['AA', 'AE', 'AH', 'AO', 'AW', 'AY', 'EH', 'ER', 'EY', 'IH','IY','OW', 'OY', 'UH', 'UW', 'M', 'N', 'NG', 'R', 'L', 'Y', 'W', 'P', 'B', 'T', 'D', 'K', 'G', 'JH',  'HH', 'F', 'V', 'S', 'Z', 'DH', 'SH', 'CH', 'ZH', 'TH']
-clean_spk = ['1272', '1462', '1673', '174', '1919', '1988', '1993', '2035', '2078', '2086', '2277', '2412', '2428', '251', '2803', '2902', '3000', '3081', '3170', '3536', '3576', '3752', '3853', '422', '5338', '5536', '5694', '5895', '6241', '6295', '6313', '6319', '6345', '652', '777', '7850', '7976', '8297', '84', '8842']
-other_spk = ['116', '1255', '1585', '1630', '1650', '1651', '1686', '1701', '2506', '3660', '3663', '3915', '4153', '4323', '4515', '4570', '4572', '4831', '5543', '5849', '6123', '6267', '6455', '6467', '6599', '6841', '700', '7601', '7641', '7697', '8173', '8254', '8288']
-test_spk = ['1188', '260', '5142', '1995', '4970', '1221', '121', '1320', '61', '7127', '7176', '1580', '2830', '7729', '1089', '1284', '2300', '3729', '8230', '6829', '3570', '5639', '237', '8224', '4992', '5683', '8463', '4507', '672', '2094', '6930', '908', '5105', '7021', '2961', '3575', '4077', '8455', '4446', '8555']
-
-# if subset == 'dev-clean':
-#     spk_list = clean_spk
-# elif subset == 'dev-other':
-#     spk_list = other_spk
-spk_list = clean_spk
+spk_list = list(set(ali.spk_id))
     
 train_utts = load('sterile_split/train_utts')
 test_utts = load('sterile_split/test_utts')
-# train_utts = load('sterile_split/dev-other/train_utts')
-# test_utts = load('sterile_split/dev-other/test_utts')
-# train_utts = load('probing_exp_split/test-clean/train_utts')
-# test_utts = load('probing_exp_split/test-clean/test_utts')
-
-
-def load_utt_set(utt_list,frame_rate=100):
-    '''
-    return features, speaker, phone labels
-    '''
-    utt_feat = []
-    utt_speaker = []
-    utt_label = []
-    for utt_id in utt_list:
-        spk, utt_loc = spk_utt_loc(utt_id)
-        feat = np.load(feat_direc + '/' + utt_loc)
-        phone_labels = create_phone_labels(utt_id, len(feat), ali, frame_rate)
-        utt_feat.extend(list(feat))
-        utt_speaker.extend([spk]*len(phone_labels))
-        utt_label.extend(phone_labels)
-    return utt_feat, utt_speaker, utt_label
-
-def remove_sil(utt_feat, utt_speaker, utt_label):
-    new_feat = []
-    new_speaker = []
-    new_label = []
-    for i, phone in enumerate(utt_label):
-        if phone not in ['SIL', 'SPN']:
-            new_feat.append(utt_feat[i])
-            new_speaker.append(utt_speaker[i])
-            new_label.append(utt_label[i])
-    return new_feat, new_speaker, new_label
-
-def shuffle_set(utt_feat, utt_speaker, utt_label):
-    utt_id = np.arange(len(utt_label))
-    shuffle(utt_id)
-    utt_feat = [utt_feat[i] for i in utt_id]
-    utt_speaker = [utt_speaker[i] for i in utt_id]
-    utt_label = [utt_label[i] for i in utt_id]
-    return utt_feat, utt_speaker, utt_label
 
 class LibriSpeechDataset(Dataset):
     def __init__(self, utt_ids, spk_set, ph_set, frame_rate=100):
@@ -91,7 +41,6 @@ class LibriSpeechDataset(Dataset):
         self.ph_dict['SIL'] = -1
         self.ph_dict['SPN'] = -1
         
-        # self.init_items(utt_ids)
         self.load_utt_set(utt_ids, frame_rate)
         self.remove_sil()
         
@@ -100,44 +49,11 @@ class LibriSpeechDataset(Dataset):
     
     def __getitem__(self, idx):
         return self.feat[idx], self.spk[idx], self.label[idx]
-        
-#     def __getitem__(self, idx):
-#         utt_id = self.utt_ids[idx]
-#         utt_offset = self.utt_offset[idx]
-#         utt_spk = self.spk[idx]
-        
-#         spk, utt_loc = self.spk_utt_loc(utt_id)
-#         assert self.spk_dict[spk] == utt_spk
-#         utt_feat = np.load(feat_direc + '/' + utt_loc)
-#         frame_feat = list(utt_feat)[utt_offset]
-#         return frame_feat, self.spk[idx], self.label[idx]
-        
-    def init_items(self, utt_list, frame_rate=100):
-        utt_ids = []
-        utt_offset = []
-        utt_speaker = []
-        utt_label = []
-        utt_phone = []
-        for utt_id in tqdm(utt_list):
-            spk, utt_loc = self.spk_utt_loc(utt_id)
-            feat = np.load(feat_direc + '/' + utt_loc)
-            phone_labels = create_phone_labels(utt_id, len(feat), ali, frame_rate)
-            utt_ids.extend([utt_id]*len(feat))
-            utt_offset.extend(list(np.arange(len(feat))))
-            utt_speaker.extend([self.spk_dict[spk]]*len(phone_labels))
-            utt_phone.extend(phone_labels)
-            utt_label.extend([self.ph_dict[ph] for ph in phone_labels])
-        self.spk = utt_speaker
-        self.phone = utt_phone
-        self.label= utt_label
-        self.utt_ids = utt_ids
-        self.utt_offset = utt_offset
             
     def spk_utt_loc(self, spk_utt_id):
         spk, utt_group = re.match('(\d+)-(\d+)-\d+',spk_utt_id).group(1,2)
         return spk, '%s/%s/%s.npy' % (spk, utt_group, spk_utt_id)
                               
-        
     def load_utt_set(self, utt_list, frame_rate=100):
         '''
         return features, speaker, phone labels
@@ -160,8 +76,6 @@ class LibriSpeechDataset(Dataset):
         self.label= utt_label
 
     def remove_sil(self):
-        # utt_ids = []
-        # utt_offset = []
         new_feat = []
         new_speaker = []
         new_label = []
@@ -178,8 +92,6 @@ class LibriSpeechDataset(Dataset):
         self.label = new_label
         self.phone = new_phone
         self.feat = new_feat
-        # self.utt_ids = utt_ids
-        # self.utt_offset = utt_offset
         
     def fewer_categories(self, ph_subset):
         new_feat = []
@@ -225,8 +137,6 @@ train_loader = torch.utils.data.DataLoader(train_set, batch_size=100, shuffle=Tr
 fout.write('loading test utterances\n')
 print('loading test utterances')
 test_set = LibriSpeechDataset(test_utts, spk_list, only_ph, frame_rate)
-# test_feat, test_spk, test_phone = next(iter(torch.utils.data.DataLoader(test_set, batch_size=len(test_set), shuffle=True)))
-# test_feat, test_spk, test_phone = next(iter(torch.utils.data.DataLoader(train_set, batch_size=1000, shuffle=True)))
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=len(test_set))
 
 fout.write("start training speaker probe\n")
